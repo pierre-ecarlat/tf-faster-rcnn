@@ -36,6 +36,27 @@ case ${DATASET} in
     ANCHORS="[4,8,16,32]"
     RATIOS="[0.5,1,2]"
     ;;
+  foodinc)
+    TRAIN_IMDB="foodinc_2017_trainval"
+    TEST_IMDB="foodinc_2017_test"
+    ITERS=110000
+    ANCHORS="[8,16,32]"
+    RATIOS="[0.5,1,2]"
+    ;;
+  foodinc_reduced)
+    TRAIN_IMDB="foodinc_reduced_2017_trainval"
+    TEST_IMDB="foodinc_reduced_2017_test"
+    ITERS=110000
+    ANCHORS="[8,16,32]"
+    RATIOS="[0.5,1,2]"
+    ;;
+  foodinc_sample)
+    TRAIN_IMDB="foodinc_sample_2017_trainval"
+    TEST_IMDB="foodinc_sample_2017_test"
+    ITERS=200
+    ANCHORS="[8,16,32]"
+    RATIOS="[0.5,1,2]"
+    ;;
   *)
     echo "No dataset given"
     exit
