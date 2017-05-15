@@ -13,6 +13,9 @@ from __future__ import print_function
 __sets = {}
 from datasets.pascal_voc import pascal_voc
 from datasets.coco import coco
+from datasets.foodinc import foodinc
+from datasets.foodinc_reduced import foodinc_reduced
+from datasets.foodinc_sample import foodinc_sample
 
 import numpy as np
 
@@ -33,6 +36,17 @@ for year in ['2015']:
   for split in ['test', 'test-dev']:
     name = 'coco_{}_{}'.format(year, split)
     __sets[name] = (lambda split=split, year=year: coco(split, year))
+
+# Set up foodinc_<split>
+for year in ['2017']:
+  for split in ['trainval', 'test']:
+    # Basic ; sample and reduced (18 categories)
+    name = 'foodinc_{}_{}'.format(year, split)
+    __sets[name] = (lambda split=split, year=year: foodinc(split, year))
+    name = 'foodinc_reduced_{}_{}'.format(year, split)
+    __sets[name] = (lambda split=split, year=year: foodinc_reduced(split, year))
+    name = 'foodinc_sample_{}_{}'.format(year, split)
+    __sets[name] = (lambda split=split, year=year: foodinc_sample(split, year))
 
 
 def get_imdb(name):
