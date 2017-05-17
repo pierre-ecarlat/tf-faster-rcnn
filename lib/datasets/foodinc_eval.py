@@ -154,25 +154,25 @@ def foodinc_eval(detpath,
     confidence = np.array([float(x[1]) for x in splitlines])
     BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
 
+    # sort by confidence
+    sorted_ind = np.argsort(-confidence)
+    sorted_scores = np.sort(-confidence)
+
+    if len(BB) > 0:
+        BB = BB[sorted_ind, :]
+    image_ids = [image_ids[x] for x in sorted_ind]
+
+    # go down dets and mark TPs and FPs
     nd = len(image_ids)
     tp = np.zeros(nd)
     fp = np.zeros(nd)
+    for d in range(nd):
+        R = class_recs[image_ids[d]]
+        bb = BB[d, :].astype(float)
+        ovmax = -np.inf
+        BBGT = R['bbox'].astype(float)
 
-    if BB.shape[0] > 0:
-        # sort by confidence
-        sorted_ind = np.argsort(-confidence)
-        sorted_scores = np.sort(-confidence)
-        BB = BB[sorted_ind, :]
-        image_ids = [image_ids[x] for x in sorted_ind]
-
-        # go down dets and mark TPs and FPs
-        for d in range(nd):
-          R = class_recs[image_ids[d]]
-          bb = BB[d, :].astype(float)
-          ovmax = -np.inf
-          BBGT = R['bbox'].astype(float)
-
-          if BBGT.size > 0:
+        if BBGT.size > 0:
             # compute overlaps
             # intersection
             ixmin = np.maximum(BBGT[:, 0], bb[0])
