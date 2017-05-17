@@ -167,6 +167,9 @@ __C.TEST.MAX_SIZE = 1000
 # IoU >= this threshold)
 __C.TEST.NMS = 0.3
 
+# Threshold for a "valid" detection, before applying nms
+__C.TEST.DET_THRESHOLD = 0.3
+
 # Experimental: treat the (K+1) units in the cls_score layer as linear
 # predictors (trained, eg, with one-vs-rest SVMs).
 __C.TEST.SVM = False

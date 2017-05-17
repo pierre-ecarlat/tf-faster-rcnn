@@ -247,19 +247,19 @@ class foodinc_sample(imdb):
     aps = []
     if not os.path.isdir(output_dir):
       os.mkdir(output_dir)
+    # mini_val = [1, 12, 36, 2]
+    for i, cls in enumerate(self._classes):
       # mini_val = [1, 12, 36, 2]
-      for i, cls in enumerate(self._classes):
-        # if i not in mini_val:
-        #   continue
-        if cls == '__background__':
-          continue
-        filename = self._get_foodinc_sample_results_file_template().format(i)
-        rec, prec, ap = foodinc_sample_eval(
-            filename, annopath, imagesetfile, cls, i, cachedir, ovthresh=0.5)
-        aps += [ap]
-        print('AP for {} = {:.4f}'.format(cls, ap))
-        with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
-          cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
+      #   continue
+      if cls == '__background__':
+        continue
+      filename = self._get_foodinc_sample_results_file_template().format(i)
+      rec, prec, ap = foodinc_eval(
+          filename, annopath, imagesetfile, cls, i, cachedir, ovthresh=0.5)
+      aps += [ap]
+      print('AP for {} = {:.4f}'.format(cls, ap))
+      with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
+        pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
 
     print(('Mean AP = {:.4f}'.format(np.mean(aps))))
     print('~~~~~~~~')
