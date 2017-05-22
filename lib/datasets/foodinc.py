@@ -194,13 +194,13 @@ class foodinc(imdb):
       overlaps[ix, cls] = 1.0
       seg_areas[ix] = (x2 - x1) * (y2 - y1)
 
-      overlaps = scipy.sparse.csr_matrix(overlaps)
+    overlaps = scipy.sparse.csr_matrix(overlaps)
 
-      return {'boxes' : boxes,
-              'gt_classes': gt_classes,
-              'gt_overlaps' : overlaps,
-              'flipped' : False,
-              'seg_areas' : seg_areas}
+    return {'boxes' : boxes,
+            'gt_classes': gt_classes,
+            'gt_overlaps' : overlaps,
+            'flipped' : False,
+            'seg_areas' : seg_areas}
 
   def _get_comp_id(self):
     comp_id = (self._comp_id + '_' + self._salt if self.config['use_salt']
