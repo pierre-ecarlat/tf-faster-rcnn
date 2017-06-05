@@ -37,7 +37,7 @@ CLASSES = ('__background__',
            'motorbike', 'person', 'pottedplant',
            'sheep', 'sofa', 'train', 'tvmonitor')
 
-NETS = {'res101': ('res101_faster_rcnn_iter_110000.ckpt',)}
+NETS = {'res101': ('/mnt2/givenModels/VOC2007/res101_faster_rcnn_iter_110000.ckpt',)}
 DATASETS= {'pascal_voc': ('voc_2007_trainval',)}
 
 def vis_detections(im, class_name, dets, thresh=0.5):
