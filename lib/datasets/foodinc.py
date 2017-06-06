@@ -19,6 +19,7 @@ import scipy.io as sio
 import utils.cython_bbox
 import pickle
 import subprocess
+import time
 import uuid
 from .foodinc_eval import foodinc_eval
 from model.config import cfg
@@ -64,7 +65,8 @@ class foodinc(imdb):
                    'use_salt': True,
                    'use_diff': False,
                    'matlab_eval': False,
-                   'rpn_file': None}
+                   'rpn_file': None,
+                   'debug': False}
 
     assert os.path.exists(self._devkit_path), \
       'Foodinc path does not exist: {}'.format(self._devkit_path)
@@ -234,6 +236,24 @@ class foodinc(imdb):
                            dets[k, 0], dets[k, 1],
                            dets[k, 2], dets[k, 3]))
 
+  def _write_foodinc_debug_file(self, all_boxes, debug_dir):
+    annotations = os.path.join(debug_dir, 'annotations')
+
+    for im_ind, index in enumerate(self.image_index):
+      with open(os.path.join(annotations, index + '.txt'), 'a') as f:
+        for cls_ind, cls in enumerate(self.classes):
+          if cls == '__background__':
+            continue
+          dets = all_boxes[cls_ind][im_ind]
+          if dets == []:
+            continue
+          for k in range(dets.shape[0]):
+            f.write('{:.1f} {:.1f} {:.1f} {:.1f} {:.1f} {:.3f}\n'.
+                    format(cls_ind, 
+                           dets[k, 0], dets[k, 1], 
+                           dets[k, 2], dets[k, 3], 
+                           dets[k, -1]))
+  
   def _do_python_eval(self, output_dir='output'):
     annopath = os.path.join(
       self._data_path,
@@ -282,7 +302,15 @@ class foodinc(imdb):
     print('--------------------------------------------------------------')
 
   def evaluate_detections(self, all_boxes, output_dir):
+    if self.config['debug']:
+      right_now = time.strftime("%Y%m%d%H%M%S")
+      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', date)
+      if not os.path.isdir(debug_dir):
+        os.makedirs(debug_dir)
+
     self._write_foodinc_results_file(all_boxes)
+    if self.config['debug']:
+      self._write_foodinc_debug_file(all_boxes, debug_dir)
     self._do_python_eval(output_dir)
     if self.config['matlab_eval']:
       self._do_matlab_eval(output_dir)
@@ -300,6 +328,12 @@ class foodinc(imdb):
     else:
       self.config['use_salt'] = True
       self.config['cleanup'] = True
+
+  def debug(self, on):
+    if on:
+      self.config['debug'] = True
+    else:
+      self.config['debug'] = False
 
 
 if __name__ == '__main__':

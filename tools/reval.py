@@ -38,6 +38,8 @@ def parse_args():
                       action='store_true')
   parser.add_argument('--nms', dest='apply_nms', help='apply nms',
                       action='store_true')
+  parser.add_argument('--debug', dest='debug_mode', help='Keep results',
+                      action='store_true')
 
   if len(sys.argv) == 1:
     parser.print_help()
@@ -50,6 +52,7 @@ def parse_args():
 def from_dets(imdb_name, output_dir, args):
   imdb = get_imdb(imdb_name)
   imdb.competition_mode(args.comp_mode)
+  imdb.debug(args.debug_mode)
   imdb.config['matlab_eval'] = args.matlab_eval
   with open(os.path.join(output_dir, 'detections.pkl'), 'rb') as f:
     dets = pickle.load(f)
