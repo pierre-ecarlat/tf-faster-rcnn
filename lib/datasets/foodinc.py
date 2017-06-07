@@ -238,6 +238,8 @@ class foodinc(imdb):
 
   def _write_foodinc_debug_file(self, all_boxes, debug_dir):
     annotations = os.path.join(debug_dir, 'annotations')
+    if not os.path.isdir(annotations):
+      os.makedirs(annotations)
 
     for im_ind, index in enumerate(self.image_index):
       with open(os.path.join(annotations, index + '.txt'), 'a') as f:
@@ -304,7 +306,7 @@ class foodinc(imdb):
   def evaluate_detections(self, all_boxes, output_dir):
     if self.config['debug']:
       right_now = time.strftime("%Y%m%d%H%M%S")
-      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', date)
+      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', right_now)
       if not os.path.isdir(debug_dir):
         os.makedirs(debug_dir)
 
