@@ -42,8 +42,8 @@ case ${DATASET} in
   foodinc)
     TRAIN_IMDB="foodinc_2017_trainval"
     TEST_IMDB="foodinc_2017_test"
-    STEPSIZE=80000
-    ITERS=110000
+    STEPSIZE=50000
+    ITERS=70000
     ANCHORS="[8,16,32]"
     RATIOS="[0.5,1,2]"
     ;;
@@ -85,7 +85,6 @@ if [ ! -f ${NET_FINAL}.index ]; then
     if [[ ! -z  ${EXTRA_ARGS_SLUG}  ]]; then
         CUDA_VISIBLE_DEVICES=${GPU_ID} time python ./tools/trainval_net.py \
             --weight data/imagenet_weights/${NET}.ckpt \
-            #--weight /mnt2/results/openImages/none_vgg16_e2e_tf/default/model.ckpt-312010 \
             --imdb ${TRAIN_IMDB} \
             --imdbval ${TEST_IMDB} \
             --iters ${ITERS} \
@@ -96,7 +95,6 @@ if [ ! -f ${NET_FINAL}.index ]; then
     else
         CUDA_VISIBLE_DEVICES=${GPU_ID} time python ./tools/trainval_net.py \
             --weight data/imagenet_weights/${NET}.ckpt \
-            #--weight /mnt2/results/openImages/none_vgg16_e2e_tf/default/model.ckpt-312010 \
             --imdb ${TRAIN_IMDB} \
             --imdbval ${TEST_IMDB} \
             --iters ${ITERS} \
