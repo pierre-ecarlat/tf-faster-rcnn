@@ -307,7 +307,7 @@ class pascal_voc(imdb):
 
     self._write_voc_results_file(all_boxes)
     if self.config['debug']:
-      self._write_voc_debug_results_file(all_boxes, debug_dir)
+      self._write_voc_debug_file(all_boxes, debug_dir)
     self._do_python_eval(output_dir)
     if self.config['matlab_eval']:
       self._do_matlab_eval(output_dir)
