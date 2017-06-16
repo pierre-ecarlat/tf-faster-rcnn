@@ -207,4 +207,15 @@ def voc_eval(detpath,
   prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
   ap = voc_ap(rec, prec, use_07_metric)
 
-  return rec, prec, ap
+  debug_details = { 
+    'number_detections': nd, 
+    'images_indexes': image_ids, 
+    'boxes': BB, 
+    'confidences': np.sort(-confidence), 
+    'true_positives': tp, 
+    'false_positives': fp, 
+    'recalls': rec, 
+    'precisions': prec
+  }
+
+  return rec, prec, ap, debug_details

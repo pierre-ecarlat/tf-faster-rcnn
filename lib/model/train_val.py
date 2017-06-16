@@ -172,7 +172,6 @@ class SolverWrapper(object):
       self.net.fix_variables(sess, self.pretrained_model)
       print('Fixed.')
       sess.run(tf.assign(lr, cfg.TRAIN.LEARNING_RATE))
-
       last_snapshot_iter = 0
     else:
       # Get the most recent snapshot and restore

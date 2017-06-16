@@ -56,6 +56,7 @@ def from_dets(imdb_name, output_dir, args):
   imdb.config['matlab_eval'] = args.matlab_eval
   with open(os.path.join(output_dir, 'detections.pkl'), 'rb') as f:
     dets = pickle.load(f)
+  
   if args.apply_nms:
     print('Applying NMS to all detections')
     nms_dets = apply_nms(dets, cfg.TEST.NMS)

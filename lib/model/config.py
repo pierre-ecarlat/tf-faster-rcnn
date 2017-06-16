@@ -122,7 +122,7 @@ __C.TRAIN.PROPOSAL_METHOD = 'gt'
 # on zero-padding.
 
 # Use RPN to detect objects
-__C.TRAIN.HAS_RPN = False
+__C.TRAIN.HAS_RPN = True
 # IOU >= thresh: positive example
 __C.TRAIN.RPN_POSITIVE_OVERLAP = 0.7
 # IOU < thresh: negative example

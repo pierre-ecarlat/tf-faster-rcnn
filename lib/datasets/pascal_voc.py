@@ -238,7 +238,9 @@ class pascal_voc(imdb):
                            dets[k, 2], dets[k, 3], 
                            dets[k, -1]))
 
-  def _do_python_eval(self, output_dir='output'):
+  def _do_python_eval(self, output_dir='output', debug_dir=None):
+    debug_mode = True if debug_dir else False
+
     annopath = os.path.join(
       self._devkit_path,
       'VOC' + self._year,
@@ -250,29 +252,72 @@ class pascal_voc(imdb):
       'ImageSets',
       'Main',
       self._image_set + '.txt')
+
     cachedir = os.path.join(self._devkit_path, 'annotations_cache')
+    debug_details_dir = ""
+    if debug_mode:
+      debug_details_dir = os.path.join(debug_dir, 'details')
+    
     aps = []
+
+    debug_details = [ { 
+      'number_detections': 0, 
+      'images_indexes': [],  
+      'boxes': [], 
+      'confidences': [], 
+      'true_positives': [], 
+      'false_positives': [], 
+      'recalls': [], 
+      'precisions': []
+    } ]
+    
     # The PASCAL VOC metric changed in 2010
     use_07_metric = True if int(self._year) < 2010 else False
     print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
     if not os.path.isdir(output_dir):
       os.mkdir(output_dir)
+    if debug_mode and not os.path.isdir(debug_details_dir):
+      os.mkdir(debug_details_dir)
+
     for i, cls in enumerate(self._classes):
       if cls == '__background__':
         continue
       filename = self._get_voc_results_file_template().format(cls)
-      rec, prec, ap = voc_eval(
+      rec, prec, ap, debg = voc_eval(
         filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
         use_07_metric=use_07_metric)
+
       aps += [ap]
+      debug_details.append(debg)
+      
       print(('AP for {} = {:.4f}'.format(cls, ap)))
       with open(os.path.join(output_dir, cls + '_pr.pkl'), 'wb') as f:
         pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
+
     print(('Mean AP = {:.4f}'.format(np.mean(aps))))
     print('~~~~~~~~')
     print('Results:')
     for ap in aps:
       print(('{:.3f}'.format(ap)))
+    
+    if debug_mode:
+      print ('Save details...')
+      with open(os.path.join(debug_details_dir, 'maps.txt'), 'w') as f:
+        f.write('\n'.join([str(ap) for ap in aps]))
+      for categ_ix, cls in enumerate(self._classes):
+        if cls == '__background__':
+          continue
+        with open(os.path.join(debug_details_dir, "detections_" + str(categ_ix) + ".txt"), 'a') as f:
+          for det in range(debug_details[categ_ix]['number_detections']):
+            f.write(str(debug_details[categ_ix]['images_indexes'][det])  + ' ' +
+                    ' '.join([str(x) for x in [y for y in debug_details[categ_ix]['boxes'][det]]])      + ' ' + 
+                    str(debug_details[categ_ix]['confidences'][det])     + ' ' + 
+                    str(debug_details[categ_ix]['true_positives'][det])  + ' ' +
+                    str(debug_details[categ_ix]['false_positives'][det]) + ' ' + 
+                    str(debug_details[categ_ix]['recalls'][det])         + ' ' + 
+                    str(debug_details[categ_ix]['precisions'][det])      + '\n'
+              )
+
     print(('{:.3f}'.format(np.mean(aps))))
     print('~~~~~~~~')
     print('')
@@ -299,18 +344,21 @@ class pascal_voc(imdb):
     status = subprocess.call(cmd, shell=True)
 
   def evaluate_detections(self, all_boxes, output_dir):
+    debug_dir = None
     if self.config['debug']:
-      right_now = time.strftime("%Y%m%d%H%M%S")
-      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', right_now)
+      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', 'voc')
       if not os.path.isdir(debug_dir):
         os.makedirs(debug_dir)
 
     self._write_voc_results_file(all_boxes)
     if self.config['debug']:
       self._write_voc_debug_file(all_boxes, debug_dir)
-    self._do_python_eval(output_dir)
+
+    self._do_python_eval(output_dir, debug_dir)
+
     if self.config['matlab_eval']:
       self._do_matlab_eval(output_dir)
+    
     if self.config['cleanup']:
       for cls in self._classes:
         if cls == '__background__':
