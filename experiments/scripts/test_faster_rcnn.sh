@@ -39,7 +39,7 @@ case ${DATASET} in
   foodinc)
     TRAIN_IMDB="foodinc_2017_trainval"
     TEST_IMDB="foodinc_2017_test"
-    ITERS=70000
+    ITERS=110000
     ANCHORS="[8,16,32]"
     RATIOS="[0.5,1,2]"
     ;;
