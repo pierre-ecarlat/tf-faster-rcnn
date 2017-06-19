@@ -63,6 +63,14 @@ case ${DATASET} in
     ANCHORS="[8,16,32]"
     RATIOS="[0.5,1,2]"
     ;;
+  uecfood256)
+    TRAIN_IMDB="uecfood256_2014_trainval"
+    TEST_IMDB="uecfood256_2014_test"
+    STEPSIZE=50000
+    ITERS=700000
+    ANCHORS="[8,16,32]"
+    RATIOS="[0.5,1,2]"
+    ;;
   *)
     echo "No dataset given"
     exit
