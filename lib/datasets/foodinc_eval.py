@@ -50,11 +50,12 @@ def parse_rec(filename):
 
   return objects
 
-def foodinc_ap(rec, prec):
+def foodinc_ap(rec, prec, confidence):
   """ ap = foodinc_ap(rec, prec)
   Compute Foodinc AP given precision and recall.
   """
   # correct AP calculation
+  prec = (prec**confidence)
   # first append sentinel values at the end
   mrec = np.concatenate(([0.], rec, [1.]))
   mpre = np.concatenate(([0.], prec, [0.]))
@@ -175,7 +176,8 @@ def foodinc_eval(detpath,
                  class_id,
                  cachedir,
                  ovthresh=0.5,
-                 punishment_metric=False):
+                 reward_relatives=0.,
+                 confidence_metric=False):
   """rec, prec, ap = foodinc_eval(detpath,
                                   annopath,
                                   imagesetfile,
@@ -214,7 +216,7 @@ def foodinc_eval(detpath,
 
   # Extract gt objects specific to this class
   class_recs = extractClassFromRecs(class_id, recs, imagenames)
-  relatives = getRelativesForClass(class_id) if punishment_metric else []
+  relatives = getRelativesForClass(class_id)
   relatives_recs = []
   for rel in relatives:
     relatives_recs.append(extractClassFromRecs(rel, recs, imagenames))
@@ -280,12 +282,11 @@ def foodinc_eval(detpath,
 
           # If relative detected, +0.3
           else:
-            tp[d] = 0.3
-            fp[d] = 0.6
+            tp[d] = reward_relatives
+            fp[d] = 1 - reward_relatives
             R['det'][jmax] = 1
         # If already detected (should not happen)
         else:
-          print ('Error, should not happen, classified detection as false positive.')
           fp[d] = 1.
 
       # If no overlap, go to the next category
@@ -302,7 +303,10 @@ def foodinc_eval(detpath,
   # avoid divide by zero in case the first detection matches a difficult
   # ground truth
   prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-  ap = foodinc_ap(rec, prec)
+  if confidence_metric:
+    ap = foodinc_ap(rec, prec, -sorted_scores)
+  else:
+    ap = foodinc_ap(rec, prec, np.asarray([1.]*len(sorted_scores)))
 
   debug_details = { 
     'number_detections': nd, 

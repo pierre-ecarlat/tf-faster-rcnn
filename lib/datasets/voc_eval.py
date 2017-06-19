@@ -32,12 +32,13 @@ def parse_rec(filename):
   return objects
 
 
-def voc_ap(rec, prec, use_07_metric=False):
+def voc_ap(rec, prec, confidence, use_07_metric=False):
   """ ap = voc_ap(rec, prec, [use_07_metric])
   Compute VOC AP given precision and recall.
   If use_07_metric is true, uses the
   VOC 07 11 point method (default:False).
   """
+  prec = (prec**confidence)
   if use_07_metric:
     # 11 point metric
     ap = 0.
@@ -66,13 +67,101 @@ def voc_ap(rec, prec, use_07_metric=False):
   return ap
 
 
+def recoverOrReadAnnotations(cachefile, imagenames):
+  if not os.path.isfile(cachefile):
+    # load annots
+    recs = {}
+    for i, imagename in enumerate(imagenames):
+      recs[imagename] = parse_rec(annopath.format(imagename))
+      if i % 100 == 0:
+        print('Reading annotation for {:d}/{:d}'.format(
+                                        i + 1, len(imagenames)))
+    # save
+    print('Saving cached annotations to {:s}'.format(cachefile))
+    with open(cachefile, 'w') as f:
+      pickle.dump(recs, f)
+  else:
+    # load
+    with open(cachefile, 'r') as f:
+      try:
+        recs = pickle.load(f)
+      except:
+        recs = pickle.load(f, encoding='bytes')
+
+  return recs
+
+def extractClassFromRecs(classname, recs, imagenames):
+  class_recs = {}
+  for imagename in imagenames:
+    R = [obj for obj in recs[imagename] if obj['name'] == classname]
+    bbox = np.array([x['bbox'] for x in R])
+    difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+    det = [False] * len(R)
+    class_recs[imagename] = { 'bbox': bbox, 'difficult': difficult, 'det': det }
+
+  return class_recs
+
+def getRelativesForClass(classname):
+  vehicles = ['aeroplane', 'bicycle', 'boat', 'bus', 'car' , 
+              'motorbike', 'train']
+  indoors  = ['bottle', 'chair', 'diningtable', 'pottedplant', 'sofa' , 
+              'tvmonitor']
+  animals  = ['bird', 'cat', 'cow', 'dog', 'sheep']
+  persons  = ['person']
+  if   classname in vehicles: r = vehicles # Vehicles
+  elif classname in indoors:  r = indoors  # Indoors
+  elif classname in animals:  r = animals  # Animals
+  elif classname in persons:  r = persons  # Persons
+  else:                       r = []
+  if len(r) > 0: r.remove(classname)
+  return r
+
+def getNumberOfRelevantRecords(class_recs):
+  # Number of relevant records, number of positives
+  npos = 0
+  for rec in class_recs:
+    npos += sum(~class_recs[rec]['difficult'])
+  return npos
+
+
+def readDetections(path):
+  detections = [line.rstrip('\n').split(' ') for line in open(path)]
+
+  image_ids = [x[0] for x in detections]
+  confidence = np.array([float(x[1]) for x in detections])
+  BB = np.array([[float(z) for z in x[2:]] for x in detections])
+
+  return image_ids, confidence, BB
+
+def compareBoxes(BB_gt, BB_det):
+  # compute overlaps
+  # intersection
+  ixmin = np.maximum(BB_gt[:, 0], BB_det[0])
+  iymin = np.maximum(BB_gt[:, 1], BB_det[1])
+  ixmax = np.minimum(BB_gt[:, 2], BB_det[2])
+  iymax = np.minimum(BB_gt[:, 3], BB_det[3])
+  iw = np.maximum(ixmax - ixmin + 1., 0.)
+  ih = np.maximum(iymax - iymin + 1., 0.)
+  inters = iw * ih
+
+  # union
+  uni = ((BB_det[2] - BB_det[0] + 1.) * (BB_det[3] - BB_det[1] + 1.) +
+         (BB_gt[:, 2] - BB_gt[:, 0] + 1.) *
+         (BB_gt[:, 3] - BB_gt[:, 1] + 1.) - inters)
+
+  overlaps = inters / uni
+  return np.max(overlaps), np.argmax(overlaps)
+
+
 def voc_eval(detpath,
              annopath,
              imagesetfile,
              classname,
              cachedir,
              ovthresh=0.5,
-             use_07_metric=False):
+             use_07_metric=False,
+             reward_relatives=0.,
+             confidence_metric=True):
   """rec, prec, ap = voc_eval(detpath,
                               annopath,
                               imagesetfile,
@@ -102,101 +191,97 @@ def voc_eval(detpath,
   if not os.path.isdir(cachedir):
     os.mkdir(cachedir)
   cachefile = os.path.join(cachedir, 'annots.pkl')
+
   # read list of images
   with open(imagesetfile, 'r') as f:
     lines = f.readlines()
   imagenames = [x.strip() for x in lines]
 
-  if not os.path.isfile(cachefile):
-    # load annots
-    recs = {}
-    for i, imagename in enumerate(imagenames):
-      recs[imagename] = parse_rec(annopath.format(imagename))
-      if i % 100 == 0:
-        print('Reading annotation for {:d}/{:d}'.format(
-          i + 1, len(imagenames)))
-    # save
-    print('Saving cached annotations to {:s}'.format(cachefile))
-    with open(cachefile, 'w') as f:
-      pickle.dump(recs, f)
-  else:
-    # load
-    with open(cachefile, 'rb') as f:
-      try:
-        recs = pickle.load(f)
-      except:
-        recs = pickle.load(f, encoding='bytes')
+  # Get all the gt objects
+  recs = recoverOrReadAnnotations(cachefile, imagenames)
 
-  # extract gt objects for this class
-  class_recs = {}
-  npos = 0
-  for imagename in imagenames:
-    R = [obj for obj in recs[imagename] if obj['name'] == classname]
-    bbox = np.array([x['bbox'] for x in R])
-    difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
-    det = [False] * len(R)
-    npos = npos + sum(~difficult)
-    class_recs[imagename] = {'bbox': bbox,
-                             'difficult': difficult,
-                             'det': det}
+  # Extract gt objects specific to this class
+  class_recs = extractClassFromRecs(classname, recs, imagenames)
+  relatives = getRelativesForClass(classname)
+  relatives_recs = []
+  for rel in relatives:
+    relatives_recs.append(extractClassFromRecs(rel, recs, imagenames))
 
-  # read dets
-  detfile = detpath.format(classname)
-  with open(detfile, 'r') as f:
-    lines = f.readlines()
+  # Number of relevant records (all the boxes in the gt)
+  npos = getNumberOfRelevantRecords(class_recs)
+  relatives_npos = []
+  for rel_recs in relatives_recs:
+    relatives_npos.append(getNumberOfRelevantRecords(rel_recs))
 
-  splitlines = [x.strip().split(' ') for x in lines]
-  image_ids = [x[0] for x in splitlines]
-  confidence = np.array([float(x[1]) for x in splitlines])
-  BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
+  
+  # Read the detection
+  detections_path = detpath.format(classname)
+  image_ids, confidence, BB = readDetections(detections_path)
 
+  # Go down detections and mark TPs and FPs (as much as detections)
   nd = len(image_ids)
   tp = np.zeros(nd)
   fp = np.zeros(nd)
 
-  if BB.shape[0] > 0:
-    # sort by confidence
-    sorted_ind = np.argsort(-confidence)
-    sorted_scores = np.sort(-confidence)
-    BB = BB[sorted_ind, :]
-    image_ids = [image_ids[x] for x in sorted_ind]
+  # If no detection for this class, returns nothing
+  if BB.shape[0] == 0:
+    return [], [], 0.0, None
 
-    # go down dets and mark TPs and FPs
-    for d in range(nd):
-      R = class_recs[image_ids[d]]
-      bb = BB[d, :].astype(float)
+  # Sort everything by confidence
+  sorted_ind = np.argsort(-confidence)
+  sorted_scores = np.sort(-confidence)
+  BB = BB[sorted_ind, :]
+  image_ids = [image_ids[x] for x in sorted_ind]
+
+  # Go down dets and mark TPs and FPs
+  for d in range(nd):
+
+    # The detection box to compare
+    bb = BB[d, :].astype(float)
+    
+    # For each possible categories (main and relatives)
+    for categ in [-1]+range(0, len(relatives_recs)):
+      
+      # Overlap
       ovmax = -np.inf
+      
+      # Main class vs relatives
+      if categ < 0:
+        R = class_recs[image_ids[d]]
+      else:
+        R = relatives_recs[categ][image_ids[d]]
+
+      # Boxes
       BBGT = R['bbox'].astype(float)
 
+      # Get the max overlap
       if BBGT.size > 0:
-        # compute overlaps
-        # intersection
-        ixmin = np.maximum(BBGT[:, 0], bb[0])
-        iymin = np.maximum(BBGT[:, 1], bb[1])
-        ixmax = np.minimum(BBGT[:, 2], bb[2])
-        iymax = np.minimum(BBGT[:, 3], bb[3])
-        iw = np.maximum(ixmax - ixmin + 1., 0.)
-        ih = np.maximum(iymax - iymin + 1., 0.)
-        inters = iw * ih
+        ovmax, jmax = compareBoxes(BBGT, bb)
 
-        # union
-        uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) +
-               (BBGT[:, 2] - BBGT[:, 0] + 1.) *
-               (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
-
-        overlaps = inters / uni
-        ovmax = np.max(overlaps)
-        jmax = np.argmax(overlaps)
-
+      # If overlap, this is a true positive
       if ovmax > ovthresh:
         if not R['difficult'][jmax]:
           if not R['det'][jmax]:
-            tp[d] = 1.
-            R['det'][jmax] = 1
+            # If main categ detected, +1
+            if categ < 0:
+              tp[d] = 1.
+              R['det'][jmax] = 1
+
+            # If relative detected, +0.3
+            else:
+              tp[d] = reward_relatives
+              fp[d] = 1 - reward_relatives
+              R['det'][jmax] = 1
+          # If already detected (should not happen)
           else:
             fp[d] = 1.
-      else:
-        fp[d] = 1.
+
+      # If no overlap, go to the next category
+
+
+    # If nothing has been found
+    if tp[d] == 0 and fp[d] == 0:
+      fp[d] = 1.
 
   # compute precision recall
   fp = np.cumsum(fp)
@@ -205,7 +290,10 @@ def voc_eval(detpath,
   # avoid divide by zero in case the first detection matches a difficult
   # ground truth
   prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-  ap = voc_ap(rec, prec, use_07_metric)
+  if confidence_metric:
+    ap = voc_ap(rec, prec, -sorted_scores)
+  else:
+    ap = voc_ap(rec, prec, np.asarray([1.]*len(sorted_scores)))
 
   debug_details = { 
     'number_detections': nd, 
