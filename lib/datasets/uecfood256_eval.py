@@ -50,8 +50,8 @@ def parse_rec(filename):
 
   return objects
 
-def foodinc_ap(rec, prec):
-  """ ap = foodinc_ap(rec, prec)
+def uecfood256_ap(rec, prec):
+  """ ap = uecfood256_ap(rec, prec)
   Compute Foodinc AP given precision and recall.
   """
   # correct AP calculation
@@ -168,20 +168,20 @@ def compareBoxes(BB_gt, BB_det):
   return np.max(overlaps), np.argmax(overlaps)
 
 
-def foodinc_eval(detpath,
-                 annopath,
-                 imagesetfile,
-                 classname,
-                 class_id,
-                 cachedir,
-                 ovthresh=0.5,
-                 punishment_metric=False):
-  """rec, prec, ap = foodinc_eval(detpath,
-                                  annopath,
-                                  imagesetfile,
-                                  classname,
-                                  class_id,
-                                  [ovthresh])
+def uecfood256_eval(detpath,
+                    annopath,
+                    imagesetfile,
+                    classname,
+                    class_id,
+                    cachedir,
+                    ovthresh=0.5,
+                    punishment_metric=False):
+  """rec, prec, ap = uecfood256_eval(detpath,
+                                     annopath,
+                                     imagesetfile,
+                                     classname,
+                                     class_id,
+                                     [ovthresh])
 
   Top level function that does the Foodinc evaluation.
 
@@ -302,7 +302,7 @@ def foodinc_eval(detpath,
   # avoid divide by zero in case the first detection matches a difficult
   # ground truth
   prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-  ap = foodinc_ap(rec, prec)
+  ap = uecfood256_ap(rec, prec)
 
   debug_details = { 
     'number_detections': nd, 

@@ -21,39 +21,85 @@ import pickle
 import subprocess
 import time
 import uuid
-from .foodinc_eval import foodinc_eval
+from .uecfood256_eval import uecfood256_eval
 from model.config import cfg
 
 
-class foodinc(imdb):
+class uecfood256(imdb):
   def __init__(self, image_set, year, devkit_path=None):
-    imdb.__init__(self, 'foodinc_' + year + '_' + image_set)
+    imdb.__init__(self, 'uecfood256_' + year + '_' + image_set)
     self._year = year
     self._image_set = image_set
     self._devkit_path = self._get_default_path() if devkit_path is None \
       else devkit_path
     self._data_path = os.path.join(self._devkit_path)
-    self._classes = ('__background__',  # always index 0
-                     'white rice', 'brown rice', 'other rice', 
-                     'bread', 'cooked bread', 'sweet bread', 'sandwich', 'other bread', 
-                     'ramen', 'udon', 'soba', 'other noodles', 
-                     'white fish', 'blue fish', 'shellfish', 'crutacean', 'other fish', 
-                     'steak', 'beef', 'pork', 'chicken', 'ham - baccon', 'other meat', 
-                     'tofu', 'soymilk', 'natto', 'beans', 'other soyfoods', 
-                     'eggs', 'egg dish', 
-                     'fruits', 
-                     'tomato', 'broccoli', 'root crops', 'green and yellow vegetables', 'mushrooms', 'other vegetables', 
-                     'milk', 'yogurt', 'cheese', 'other dairy products', 
-                     'nuts & seeds', 
-                     'water', 'juice', 'vegetable juice', 'coffe - tea', 'alcohol', 'other drinks', 
-                     'stir-fried food', 'fried food', 'steamed food', 'grilled food', 'simmered food', 
-                     'green salad', 'seaweed salad', 'potato - pumpkins salad', 'proteinized salad', 'vinegared salad', 
-                     'soup stock', 
-                     'pastry', 'japanese pastry', 
-                     'curry', 'rice ball - seaweed roll', 'porridge', 'other rice dishes', 
-                     'pot', 'bento')
+    self._classes = ('__background__', # always index 0
+                         'rice', 'eels on rice', 'pilaf', 'chicken-and-egg on rice', 'pork cutlet on rice',  # 1-5
+                         'beef curry', 'sushi', 'chicken rice', 'fried rice', 'tempura bowl',
+                         'bibimbap', 'toast', 'croissant', 'roll bread', 'raisin bread',
+                         'chip butty', 'hamburger', 'pizza', 'sandwiches', 'udon noodles',
+                         'tempura udon', 'soba noodles', 'ramen noodles', 'beef noodles', 'tensin noodles', # 21-25
+                         'fried noodles', 'spaghetti', 'Japanese-style pancake', 'takoyaki', 'gratin',
+                         'sauteed vegetables', 'croquette', 'grilled eggplant', 'sauteed spinach', 'vegetable tempura',
+                         'miso soup', 'potage', 'sausage', 'oden', 'omelet',
+                         'ganmodoki', 'jiaozi', 'stew', 'teriyaki grilled fish', 'fried fish', # 41-45
+                         'grilled salmon', 'salmon meuniere', 'sashimi', 'grilled pacific saury', 'sukiyaki',
+                         'sweet and sour pork', 'lightly roasted fish', 'steamed egg hotpotch', 'tempura', 'fried chicken',
+                         'sirloin cutlet', 'nanbanzuke', 'boiled fish', 'seasoned beef with potatoes', 'hamburg steak',
+                         'steak', 'dried fish', 'ginger pork saute', 'spicy chili-flavored tofu', 'yakitori', # 61-65
+                         'cabbage roll', 'omelet', 'egg sunny-side up', 'natto', 'cold tofu',
+                         'egg roll', 'chilled noodles', 'stir-fried beef and peppers', 'simmered pork',
+                               'boiled chicken and vegetables',
+                         'sashimi bowl', 'sushi bowl', 'fish-shaped pancake with bean jam', 'shrimp with chilli sauce',
+                              'roast chicken',
+                         'steamed meat dumpling', 'omlet with fried rice', 'cutlet curry', 'spaghetti meat sauce',
+                              'fried shrimp', # 81-85
+                         'potato salad', 'green salad', 'macoroni salad', 'Japanese tofu and vegetable chowder', 'pork miso soup',
+                         'chinese soup', 'beef bowl', 'kinpira-style sauteed burdock', 'rice ball', 'pizza toast',
+                         'dipping noodles', 'hot dog', 'french fries', 'mixed rice', 'goya chanpuru',
+                         'green curry', 'okinawa soba', 'mango pudding', 'almond jelly', 'jjigae', # 101-105
+                         'dak galbi', 'dry curry', 'kamameshi', 'rice vermicelli', 'paella',
+                         'tanmen', 'kushikatu', 'yellow curry', 'pancake', 'champon',
+                         'crape', 'tiramisu', 'waffle', 'rare cheese cake', 'shortcake',
+                         'chop suey', 'twice cooked pork', 'mushroom risotto', 'samul', 'zoni', # 121-125
+                         'french toast', 'fine white noodles', 'minestrone', 'pot au feu', 'chicken nuggets',
+                         'namero', 'french bread', 'rice gruel', 'broiled eel bowl', 'clear soup',
+                         'yudofu', 'mozuku', 'inarizushi', 'pork loin cutlet', 'pork fillet cutlet',
+                         'chicken cutlet', 'ham cutlet', 'minced meat cutlet', 'thinly sliced raw horsemeat', 'bagel', # 141-145
+                         'scone', 'tortilla', 'tacos', 'nachos', 'meat loaf',
+                         'scrambled egg', 'rice gratin', 'lasagna', 'Ceasar salad', 'oatmeal',
+                         'fried pork dumplings served in soup', 'oshiruko', 'muffin', 'popcorn', 'cream puff',
+                         'doughnut', 'apple pie', 'parfait', 'fried pork in scoop', 'lamb kebabs', # 161-165
+                         'stir-fried potato eggplant and green pepper', 'roast duck', 'hot pot', 'pork belly', 'xiao long bao',
+                         'moon cake', 'custard tart', 'beef noodle soup', 'pork cutlet', 'minced pork rice',
+                         'fish ball soup', 'oyster omelette', 'glutinous oil rice', 'turnip pudding', 'stinky tofu',
+                         'lemon fig jelly', 'khao soi', 'sour prawn soup', 'Thai papaya salad',
+                              'boned, sliced Hainan-style chicken with marinated rice', # 181-185
+                         'hot and sour, fish and vegetable ragout', 'stir-fried mixed vegetables', 'beef in oyster sauce',
+                              'pork satay', 'spicy chicken salad',
+                         'noodles with fish curry', 'pork sticky noodles', 'pork with lemon', 'stewed pork leg',
+                              'charcoal-boiled pork neck',
+                         'fried mussel pancakes', 'deep fried chiecken wing', 'barbecued red pork in sauce with rice',
+                              'rice with roast duck', 'rice crispy pork',
+                         'wonton soup', 'chicken rice curry with coconut', 'crispy noodles',
+                              'egg noodle in chicken yellow curry', 'coconut milk soup', # 201-205
+                         'pho', 'hue beef rice vermicelli soup', 'vermicelli noodles with snails', 'fried spring rolls',
+                              'steamed rice roll',
+                         'shrimp patties', 'ball shaped bun with pork', 'coconut milk-flavoured crepes with shrimp and beef',
+                              'small steamed savory rice pancake', 'glutinous rice balls',
+                         'loco moco', 'haupia', 'malasada', 'laulau', 'spam musubi', 
+                         'oxtail soup', 'adobo', 'lumpia', 'brownie', 'churro', # 221-225
+                         'jambalaya', 'nasi goreng', 'ayam goreng', 'ayam bakar', 'bubur ayam',
+                         'gulai', 'laska', 'mie ayam', 'mie goreng', 'nasi campur',
+                         'nasi padang', 'nasi uduk', 'babi guling', 'kaya toast', 'bak kut teh',
+                         'curry puff', 'chow mein', 'zha jiang mian', 'kung pao chicken', 'crullers', # 241-245
+                         'eggplant with garlic sauce', 'three cup chicken', 'bean curd family style',
+                              'salt and pepper fried shrimp with shell', 'baked salmon',
+                         'braised pork meat ball with napa cabbage', 'winter melon soup', 'steamed spareribs',
+                              'chinese pumpkin pie', 'eight treasure rice', 
+                         'hot and sour soup') # 256
     self._class_to_ind = dict(list(zip(self.classes, list(range(self.num_classes)))))
-    self._image_ext = '.png'
+    self._image_ext = '.jpg'
     self._image_index = self._load_image_set_index()
     # Default to roidb handler
     self._roidb_handler = self.gt_roidb
@@ -69,7 +115,7 @@ class foodinc(imdb):
                    'debug': False}
 
     assert os.path.exists(self._devkit_path), \
-      'Foodinc path does not exist: {}'.format(self._devkit_path)
+      'UECFOOD256 path does not exist: {}'.format(self._devkit_path)
     assert os.path.exists(self._data_path), \
       'Path does not exist: {}'.format(self._data_path)
 
@@ -105,9 +151,9 @@ class foodinc(imdb):
 
   def _get_default_path(self):
     """
-    Return the default path where PASCAL VOC is expected to be installed.
+    Return the default path where UECFOOD256 is expected to be installed.
     """
-    return os.path.join(cfg.DATA_DIR, 'Foodinc_' + self._year)
+    return os.path.join(cfg.DATA_DIR, 'UECFOOD256_' + self._year)
 
   def gt_roidb(self):
     """
@@ -125,7 +171,7 @@ class foodinc(imdb):
       print('{} gt roidb loaded from {}'.format(self.name, cache_file))
       return roidb
 
-    gt_roidb = [self._load_foodinc_annotation(index)
+    gt_roidb = [self._load_uecfood256_annotation(index)
                 for index in self.image_index]
     with open(cache_file, 'wb') as fid:
       pickle.dump(gt_roidb, fid, pickle.HIGHEST_PROTOCOL)
@@ -149,7 +195,7 @@ class foodinc(imdb):
       box_list = pickle.load(f)
     return self.create_roidb_from_box_list(box_list, gt_roidb)
 
-  def _load_foodinc_annotation(self, index):
+  def _load_uecfood256_annotation(self, index):
     """
     Load image and bounding boxes info from annotation text file in the format:
     obj1_class_id x1 y1 x2 y2
@@ -209,7 +255,7 @@ class foodinc(imdb):
                else self._comp_id)
     return comp_id
 
-  def _get_foodinc_results_file_template(self):
+  def _get_uecfood256_results_file_template(self):
     # VOCdevkit/results/VOC2007/Main/<comp_id>_det_test_aeroplane.txt
     filename = self._get_comp_id() + '_det_' + self._image_set + '_{:07d}.txt'
     path = os.path.join(
@@ -219,12 +265,12 @@ class foodinc(imdb):
       filename)
     return path
 
-  def _write_foodinc_results_file(self, all_boxes):
+  def _write_uecfood256_results_file(self, all_boxes):
     for cls_ind, cls in enumerate(self.classes):
       if cls == '__background__':
         continue
       print('Writing {} Foodinc results file, ID: {}'.format(cls, cls_ind))
-      filename = self._get_foodinc_results_file_template().format(cls_ind)
+      filename = self._get_uecfood256_results_file_template().format(cls_ind)
       with open(filename, 'wt') as f:
         for im_ind, index in enumerate(self.image_index):
           dets = all_boxes[cls_ind][im_ind]
@@ -236,7 +282,7 @@ class foodinc(imdb):
                            dets[k, 0], dets[k, 1],
                            dets[k, 2], dets[k, 3]))
 
-  def _write_foodinc_debug_file(self, all_boxes, debug_dir):
+  def _write_uecfood256_debug_file(self, all_boxes, debug_dir):
     annotations = os.path.join(debug_dir, 'annotations')
     if not os.path.isdir(annotations):
       os.makedirs(annotations)
@@ -297,8 +343,8 @@ class foodinc(imdb):
       #   continue
       if cls == '__background__':
         continue
-      filename = self._get_foodinc_results_file_template().format(i)
-      rec, prec, ap, debg = foodinc_eval(
+      filename = self._get_uecfood256_results_file_template().format(i)
+      rec, prec, ap, debg = uecfood256_eval(
           filename, annopath, imagesetfile, cls, i, cachedir, ovthresh=0.5)
 
       aps += [ap]
@@ -352,13 +398,13 @@ class foodinc(imdb):
   def evaluate_detections(self, all_boxes, output_dir):
     debug_dir = None
     if self.config['debug']:
-      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', 'foodinc')
+      debug_dir = os.path.join(cfg.ROOT_DIR, 'debug', 'uecfood256')
       if not os.path.isdir(debug_dir):
         os.makedirs(debug_dir)
 
-    self._write_foodinc_results_file(all_boxes)
+    self._write_uecfood256_results_file(all_boxes)
     if self.config['debug']:
-      self._write_foodinc_debug_file(all_boxes, debug_dir)
+      self._write_uecfood256_debug_file(all_boxes, debug_dir)
 
     self._do_python_eval(output_dir, debug_dir)
     
@@ -369,7 +415,7 @@ class foodinc(imdb):
       for i, cls in enumerate(self._classes):
         if cls == '__background__':
           continue
-        filename = self._get_foodinc_results_file_template().format(i)
+        filename = self._get_uecfood256_results_file_template().format(i)
         os.remove(filename)
 
   def competition_mode(self, on):
@@ -388,9 +434,9 @@ class foodinc(imdb):
 
 
 if __name__ == '__main__':
-  from datasets.foodinc import foodinc
+  from datasets.uecfood256 import uecfood256
 
-  d = foodinc('trainval', '2017')
+  d = uecfood256('trainval', '2017')
   res = d.roidb
   from IPython import embed;
 
