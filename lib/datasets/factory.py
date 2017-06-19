@@ -53,7 +53,7 @@ for year in ['2017']:
 for year in ['2014']:
   for split in ['trainval', 'test']:
     name = 'uecfood256_{}_{}'.format(year, split)
-    __sets[name] = (lambda split=split, year=year: foodinc(split, year))
+    __sets[name] = (lambda split=split, year=year: uecfood256(split, year))
 
 
 def get_imdb(name):
