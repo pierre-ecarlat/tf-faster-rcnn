@@ -74,7 +74,7 @@ def foodinc_ap(rec, prec, confidence):
   return ap
 
 
-def recoverOrReadAnnotations(cachefile, imagenames):
+def recoverOrReadAnnotations(cachefile, imagenames, annopath):
   if not os.path.isfile(cachefile):
     # load annots
     recs = {}
@@ -176,7 +176,7 @@ def foodinc_eval(detpath,
                  class_id,
                  cachedir,
                  ovthresh=0.5,
-                 reward_relatives=0.,
+                 reward_relatives=0.3,
                  confidence_metric=False):
   """rec, prec, ap = foodinc_eval(detpath,
                                   annopath,
@@ -212,7 +212,7 @@ def foodinc_eval(detpath,
   imagenames = [x.strip() for x in lines]
 
   # Get all the gt objects
-  recs = recoverOrReadAnnotations(cachefile, imagenames)
+  recs = recoverOrReadAnnotations(cachefile, imagenames, annopath)
 
   # Extract gt objects specific to this class
   class_recs = extractClassFromRecs(class_id, recs, imagenames)

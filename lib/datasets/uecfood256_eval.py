@@ -73,7 +73,7 @@ def uecfood256_ap(rec, prec):
   return ap
 
 
-def recoverOrReadAnnotations(cachefile, imagenames):
+def recoverOrReadAnnotations(cachefile, imagenames, annopath):
   if not os.path.isfile(cachefile):
     # load annots
     recs = {}
@@ -198,7 +198,7 @@ def uecfood256_eval(detpath,
   # assumes annotations are in annopath.format(imagename)
   # assumes imagesetfile is a text file with each line an image name
   # cachedir caches the annotations in a pickle file
-
+  
   # first load gt
   if not os.path.isdir(cachedir):
     os.mkdir(cachedir)
@@ -210,7 +210,25 @@ def uecfood256_eval(detpath,
   imagenames = [x.strip() for x in lines]
 
   # Get all the gt objects
-  recs = recoverOrReadAnnotations(cachefile, imagenames)
+  if not os.path.isfile(cachefile):
+    # load annots
+    recs = {}
+    for i, imagename in enumerate(imagenames):
+      recs[imagename] = parse_rec(annopath.format(imagename))
+      if i % 100 == 0:
+        print('Reading annotation for {:d}/{:d}'.format(
+                                        i + 1, len(imagenames)))
+    # save
+    print('Saving cached annotations to {:s}'.format(cachefile))
+    with open(cachefile, 'w') as f:
+      pickle.dump(recs, f)
+  else:
+    # load
+    with open(cachefile, 'r') as f:
+      try:
+        recs = pickle.load(f)
+      except:
+        recs = pickle.load(f, encoding='bytes')
 
   # Extract gt objects specific to this class
   class_recs = extractClassFromRecs(class_id, recs, imagenames)

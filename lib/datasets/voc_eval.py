@@ -67,7 +67,7 @@ def voc_ap(rec, prec, confidence, use_07_metric=False):
   return ap
 
 
-def recoverOrReadAnnotations(cachefile, imagenames):
+def recoverOrReadAnnotations(cachefile, imagenames, annopath):
   if not os.path.isfile(cachefile):
     # load annots
     recs = {}
@@ -160,8 +160,8 @@ def voc_eval(detpath,
              cachedir,
              ovthresh=0.5,
              use_07_metric=False,
-             reward_relatives=0.,
-             confidence_metric=True):
+             reward_relatives=0.3,
+             confidence_metric=False):
   """rec, prec, ap = voc_eval(detpath,
                               annopath,
                               imagesetfile,
@@ -198,7 +198,7 @@ def voc_eval(detpath,
   imagenames = [x.strip() for x in lines]
 
   # Get all the gt objects
-  recs = recoverOrReadAnnotations(cachefile, imagenames)
+  recs = recoverOrReadAnnotations(cachefile, imagenames, annopath)
 
   # Extract gt objects specific to this class
   class_recs = extractClassFromRecs(classname, recs, imagenames)
